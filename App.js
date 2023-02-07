@@ -7,6 +7,7 @@ import Profile from './screens/Profile';
 import Splash from './screens/Splash';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState, } from 'react';
+import HomeScreen from './screens/HomeScreen';
 
 
 
@@ -29,26 +30,31 @@ export default function App() {
     // We haven't finished reading from AsyncStorage yet
     return <SplashScreen />;
   } else {
-    !storage.check_email ? (
-      <Stack.Screen options={{ headerShown: false }} name="Onboarding" component={Onboarding} />
-    ) : (
-      <Stack.Screen options={{ headerShown: false }} name="Profile" component={Profile} />
+    // storage.check_email ? (
+    <Stack.Screen options={{ headerShown: false }} name="Profile" component={Profile} />
+    // ) : (
 
-    )
+    // <Stack.Screen options={{ headerShown: false }} name="Onboarding" component={Onboarding} />
+    // )
   }
 
   return (
     <NavigationContainer>
       <Stack.Navigator>
-        {/* {storage.check_email ? ( */}
-        <Stack.Screen options={{ headerShown: false }} name="Onboarding" component={Onboarding} />
-        <Stack.Screen options={{ headerShown: false }} name="Profile" component={Profile} />
-        {/* ) : ( */}
-        {/* )} */}
+        {storage.check_email ? (
+          <>
+            <Stack.Screen options={{ headerShown: false }} name="HomeScreen" component={HomeScreen} />
+            <Stack.Screen options={{ headerShown: false }} name="Profile" component={Profile} />
+          </>
+        ) : (
+          <Stack.Screen options={{ headerShown: false }} name="Onboarding" component={Onboarding} />
+        )}
       </Stack.Navigator>
     </NavigationContainer >
   );
 }
+
+
 
 const styles = StyleSheet.create({
   container: {

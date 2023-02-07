@@ -18,6 +18,12 @@ export default function Profile() {
         last_name: '',
         email: '',
         phone_number: '',
+        check_textInputChange: 'null',
+        check_email: 'null',
+        order_status: false,
+        password_changes: false,
+        special_offers: false,
+        newsletters: false
     });
 
     const storeData = async () => {
@@ -31,15 +37,13 @@ export default function Profile() {
 
     const getData = async () => {
         try {
-            console.log('hello')
             const jsonValue = await AsyncStorage.getItem('profileData')
-            console.log('jsonValue', jsonValue)
-            // return jsonValue != null ? JSON.parse(jsonValue) : null;
             setData(jsonValue != null ? JSON.parse(jsonValue) : null)
         } catch (e) { }
     }
     useEffect(() => {
         getData()
+        console.log(data)
     }, []);
 
     const textInputChange = (val) => {
@@ -174,16 +178,19 @@ export default function Profile() {
                             style={styles.textInput} />
                         <Text style={styles.textInputTitles}>{'Last Name'}</Text>
                         <TextInput
+                            value={data.last_name}
                             onChangeText={(val) => textLastNameInputChange(val)}
                             placeholder="Type your Last Name"
                             style={styles.textInput} />
                         <Text style={styles.textInputTitles}>{'Email'}</Text>
                         <TextInput
+                            value={data.email}
                             onChangeText={(val) => handleEmailChange(val)}
                             placeholder="Type your Email"
                             style={styles.textInput} />
                         <Text style={styles.textInputTitles}>{'Phone Nuber'}</Text>
                         <MaskedTextInput
+                            value={data.phone_number}
                             mask="999-999-9999"
                             onChangeText={(val) => phoneInputChange(val)}
                             placeholder="Type your Phone"
@@ -193,31 +200,34 @@ export default function Profile() {
                         </Text>
                         <View style={styles.checkBoxes}>
                             <BouncyCheckbox
+                                isChecked={data.order_status}
                                 size={25}
                                 fillColor="#495E57"
                                 unfillColor="#FFFFFF"
                                 innerIconStyle={{ borderWidth: 2 }}
-                                onPress={(isChecked: boolean) => { }}
+                                onPress={(isChecked: boolean) => setData({ ...data, order_status: isChecked })}
                             />
                             <Text>{'Order Statuses'}</Text>
                         </View>
                         <View style={styles.checkBoxes}>
                             <BouncyCheckbox
+                                isChecked={data.password_changes}
                                 size={25}
                                 fillColor="#495E57"
                                 unfillColor="#FFFFFF"
                                 innerIconStyle={{ borderWidth: 2 }}
-                                onPress={(isChecked: boolean) => { }}
+                                onPress={(isChecked: boolean) => setData({ ...data, password_changes: isChecked })}
                             />
                             <Text>{'Password Changes'}</Text>
                         </View>
                         <View style={styles.checkBoxes}>
                             <BouncyCheckbox
+                                isChecked={data.special_offers}
                                 size={25}
                                 fillColor="#495E57"
                                 unfillColor="#FFFFFF"
                                 innerIconStyle={{ borderWidth: 2 }}
-                                onPress={(isChecked: boolean) => { }}
+                                onPress={(isChecked: boolean) => setData({ ...data, special_offers: isChecked })}
                             />
                             <Text>{'Special Offers'}</Text>
                         </View>
@@ -227,7 +237,7 @@ export default function Profile() {
                                 fillColor="#495E57"
                                 unfillColor="#FFFFFF"
                                 innerIconStyle={{ borderWidth: 2 }}
-                                onPress={(isChecked: boolean) => { updateData }}
+                                onPress={(isChecked: boolean) => setData({ ...data, newsletters: isChecked })}
 
                             />
                             <Text>{'Newsletters'}</Text>
@@ -246,7 +256,7 @@ export default function Profile() {
                                 <Text style={styles.text}>{'Discrad Changes'}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                onPress={() => { }}
+                                onPress={storeData}
                                 style={{ ...styles.button, backgroundColor: '#495E57', width: responsiveWidth(40), }}
                             >
                                 <Text style={{ ...styles.text, color: 'white' }}>{'Save Changes'}</Text>
