@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Image, TextInput, TouchableOpacity, Button } from 'react-native';
+import { StyleSheet, Text, View, Image, TextInput, TouchableOpacity, Button, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 import { responsiveFontSize, responsiveHeight, responsiveWidth } from '../scripts/constants';
@@ -10,6 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import CheckBox from 'expo-checkbox';
 
 
 export default function Profile({ navigation }) {
@@ -26,8 +27,10 @@ export default function Profile({ navigation }) {
         order_status: false,
         password_changes: false,
         special_offers: false,
-        newsletters: false
+        newsletters: false,
+        image: '',
     });
+    const [discard, setDiscard] = useState(false)
 
     const storeData = async () => {
         try {
@@ -42,12 +45,14 @@ export default function Profile({ navigation }) {
         try {
             const jsonValue = await AsyncStorage.getItem('profileData')
             setData(jsonValue != null ? JSON.parse(jsonValue) : null)
-        } catch (e) { }
+            setDiscard(false)
+        } catch (e) {
+            console.log(e)
+        }
     }
     useEffect(() => {
         getData()
-        console.log(data)
-    }, []);
+    }, [discard]);
 
     const textInputChange = (val) => {
         if (val.length !== 0) {
@@ -111,12 +116,27 @@ export default function Profile({ navigation }) {
             aspect: [4, 3],
             quality: 1,
         });
-
-
         if (!result.canceled) {
-            setImage(result.assets[0].uri);
+            setData((prevState) => ({
+                ...prevState,
+                ['image']: result.assets[0].uri
+            }))
         }
     };
+
+    const removeImage = () => {
+        setData((prevState) => ({
+            ...prevState,
+            ['image']: "",
+        }))
+    }
+
+    const updateProfile = (key, value) => {
+        setData((prevState) => ({
+            ...prevState,
+            [key]: value,
+        }))
+    }
 
     const clearStorage = async () => {
         AsyncStorage.clear()
@@ -124,7 +144,9 @@ export default function Profile({ navigation }) {
     }
 
     return (
-        <View style={styles.container}>
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity
                     onPress={() => navigation?.navigate('HomeScreen')}
@@ -148,7 +170,7 @@ export default function Profile({ navigation }) {
                     }}
                 />
             </View>
-            <View style={styles.footer}>
+            <ScrollView style={styles.footer}>
                 <Text style={{ ...styles.title, marginTop: 15 }}>
                     {'Personal Informaiton'}
                 </Text>
@@ -159,12 +181,17 @@ export default function Profile({ navigation }) {
                                 <Text style={{ marginBottom: 2 }}>
                                     {'Avatar'}
                                 </Text>
-                                <View style={styles.avatar}>
-                                    {image && <Image source={{ uri: image }}
-                                        style={{
-                                            ...styles.avatar, marginHorizontal: 0
-                                        }} />}
-                                </View>
+                                {data?.image ? <Image source={{ uri: data?.image }}
+                                    style={{
+                                        ...styles.avatar,
+                                    }} />
+                                    :
+                                    <View style={styles.avatar}>
+                                        <Text style={{ fontSize: 32, color: '#FFFFFF', fontWeight: 'bold' }}>
+                                            {data.name && Array.from(data.name)[0]}{data.last_name && Array.from(data.last_name)[0]}
+                                        </Text>
+                                    </View>
+                                }
                             </View>
                             <TouchableOpacity
                                 onPress={pickImage}
@@ -173,7 +200,7 @@ export default function Profile({ navigation }) {
                                 <Text style={{ ...styles.text, color: 'white' }}>{'Change'}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                onPress={() => setImage(null)}
+                                onPress={removeImage}
                                 style={{ ...styles.button, margin: 0, backgroundColor: 'white', borderWidth: 1, borderColor: "#495E57" }}
                             >
                                 <Text style={styles.text}>{'Remove'}</Text>
@@ -208,46 +235,38 @@ export default function Profile({ navigation }) {
                             {'Email Notifications'}
                         </Text>
                         <View style={styles.checkBoxes}>
-                            <BouncyCheckbox
-                                isChecked={data.order_status}
-                                size={25}
-                                fillColor="#495E57"
-                                unfillColor="#FFFFFF"
-                                innerIconStyle={{ borderWidth: 2 }}
-                                onPress={(isChecked: boolean) => setData({ ...data, order_status: isChecked })}
+                            <CheckBox
+                                value={data.order_status}
+                                color={'#495E'}
+                                onValueChange={(newValue) => updateProfile('order_status', newValue)}
+                                style={styles.checkBoxEach}
                             />
                             <Text>{'Order Statuses'}</Text>
                         </View>
                         <View style={styles.checkBoxes}>
-                            <BouncyCheckbox
-                                isChecked={data.password_changes}
-                                size={25}
-                                fillColor="#495E57"
-                                unfillColor="#FFFFFF"
-                                innerIconStyle={{ borderWidth: 2 }}
-                                onPress={(isChecked: boolean) => setData({ ...data, password_changes: isChecked })}
+                            <CheckBox
+                                value={data.password_changes}
+                                color={'#495E'}
+                                onValueChange={(newValue) => updateProfile('password_changes', newValue)}
+                                style={styles.checkBoxEach}
                             />
                             <Text>{'Password Changes'}</Text>
                         </View>
                         <View style={styles.checkBoxes}>
-                            <BouncyCheckbox
-                                isChecked={data.special_offers}
-                                size={25}
-                                fillColor="#495E57"
-                                unfillColor="#FFFFFF"
-                                innerIconStyle={{ borderWidth: 2 }}
-                                onPress={(isChecked: boolean) => setData({ ...data, special_offers: isChecked })}
+                            <CheckBox
+                                value={data.special_offers}
+                                color={'#495E'}
+                                onValueChange={(newValue) => updateProfile('special_offers', newValue)}
+                                style={styles.checkBoxEach}
                             />
                             <Text>{'Special Offers'}</Text>
                         </View>
                         <View style={styles.checkBoxes}>
-                            <BouncyCheckbox
-                                size={25}
-                                fillColor="#495E57"
-                                unfillColor="#FFFFFF"
-                                innerIconStyle={{ borderWidth: 2 }}
-                                onPress={(isChecked: boolean) => setData({ ...data, newsletters: isChecked })}
-
+                            <CheckBox
+                                value={data.newsletters}
+                                color={'#495E'}
+                                onValueChange={(newValue) => updateProfile('newsletters', newValue)}
+                                style={styles.checkBoxEach}
                             />
                             <Text>{'Newsletters'}</Text>
                         </View>
@@ -273,8 +292,8 @@ export default function Profile({ navigation }) {
                         </View>
                     </View>
                 </View>
-            </View>
-        </View >
+            </ScrollView>
+        </KeyboardAvoidingView >
     )
 }
 
@@ -305,7 +324,9 @@ const styles = StyleSheet.create({
         height: 70,
         width: 70,
         borderRadius: 50,
-        marginHorizontal: 20
+        marginHorizontal: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     button: {
         backgroundColor: 'blue',
@@ -345,8 +366,11 @@ const styles = StyleSheet.create({
     checkBoxes: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginLeft: responsiveWidth(4),
+        margin: responsiveWidth(5),
         marginVertical: responsiveHeight(0.3)
+    },
+    checkBoxEach: {
+        marginRight: 15,
     },
     text: {
         fontWeight: 'bold'
