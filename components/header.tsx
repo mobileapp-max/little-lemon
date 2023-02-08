@@ -8,8 +8,11 @@ import BouncyCheckbox from "react-native-bouncy-checkbox";
 import { MaskedTextInput } from "react-native-mask-text";
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-export default function Header({ navigation }) {
+
+export const Header = ({ navigation }) => {
     const [image, setImage] = useState(null);
 
     return (
@@ -23,7 +26,7 @@ export default function Header({ navigation }) {
                 }}
             />
             <TouchableOpacity
-                // onPress={() => navigation.navigate('Profile')}
+                onPress={() => navigation?.navigate('Profile')}
                 style={styles.avatar}>
                 {image && <Image source={{ uri: image }}
                     style={{

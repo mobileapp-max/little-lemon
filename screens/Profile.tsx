@@ -8,8 +8,11 @@ import BouncyCheckbox from "react-native-bouncy-checkbox";
 import { MaskedTextInput } from "react-native-mask-text";
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-export default function Profile() {
+
+export default function Profile({ navigation }) {
 
     const [storage, setStorage] = useState({})
     const [image, setImage] = useState(null);
@@ -115,10 +118,16 @@ export default function Profile() {
         }
     };
 
+    const clearStorage = async () => {
+        AsyncStorage.clear()
+        navigation?.navigate('Onboarding')
+    }
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity
+                    onPress={() => navigation?.navigate('HomeScreen')}
                     style={{
                         position: 'absolute',
                         left: 27,
@@ -243,7 +252,7 @@ export default function Profile() {
                             <Text>{'Newsletters'}</Text>
                         </View>
                         <TouchableOpacity
-                            onPress={() => console.log(getData())}
+                            onPress={clearStorage}
                             style={{ ...styles.button, backgroundColor: '#F4CE14', width: responsiveWidth(85), marginBottom: responsiveHeight(0.5) }}
                         >
                             <Text style={styles.text}>{'Log Out'}</Text>

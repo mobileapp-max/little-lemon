@@ -4,7 +4,7 @@ import { StyleSheet, Text, View, Image, TextInput, TouchableOpacity, FlatList, A
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import Header from '../components/header';
+import { Header } from '../components/header';
 import { responsiveFontSize, responsiveHeight, responsiveWidth } from '../scripts/constants';
 import * as SQLite from 'expo-sqlite';
 import { FontAwesome } from '@expo/vector-icons';
@@ -90,7 +90,7 @@ export default function HomeScreen({ navigation }) {
 
     return (
         <View style={styles.container}>
-            <Header></Header>
+            <Header navigation={navigation}></Header>
             <View style={styles.hero}>
                 <Text style={styles.lemonTitle}>{'Little Lemon'}</Text>
                 <Text style={{ ...styles.title, color: 'white' }}>{'Chicago'}</Text>

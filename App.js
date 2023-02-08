@@ -11,6 +11,7 @@ import HomeScreen from './screens/HomeScreen';
 
 
 
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -26,28 +27,32 @@ export default function App() {
     })()
   }, []);
 
-  if (storage.isLoading) {
-    // We haven't finished reading from AsyncStorage yet
-    return <SplashScreen />;
-  } else {
-    // storage.check_email ? (
-    <Stack.Screen options={{ headerShown: false }} name="Profile" component={Profile} />
-    // ) : (
+  // if (storage.isLoading) {
+  //   // We haven't finished reading from AsyncStorage yet
+  //   return <SplashScreen />;
+  // } else {
+  //   // storage.check_email ? (
+  //   <Stack.Screen options={{ headerShown: false }} name="Profile" component={Profile} />
+  //   // ) : (
 
-    // <Stack.Screen options={{ headerShown: false }} name="Onboarding" component={Onboarding} />
-    // )
-  }
+  //   // <Stack.Screen options={{ headerShown: false }} name="Onboarding" component={Onboarding} />
+  //   // )
+  // }
 
   return (
     <NavigationContainer>
       <Stack.Navigator>
-        {storage.check_email ? (
+        {storage?.check_email ? (
           <>
             <Stack.Screen options={{ headerShown: false }} name="HomeScreen" component={HomeScreen} />
             <Stack.Screen options={{ headerShown: false }} name="Profile" component={Profile} />
           </>
         ) : (
-          <Stack.Screen options={{ headerShown: false }} name="Onboarding" component={Onboarding} />
+          <>
+            <Stack.Screen options={{ headerShown: false }} name="Onboarding" component={Onboarding} />
+            <Stack.Screen options={{ headerShown: false }} name="HomeScreen" component={HomeScreen} />
+            <Stack.Screen options={{ headerShown: false }} name="Profile" component={Profile} />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer >

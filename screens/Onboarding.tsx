@@ -8,6 +8,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 export default function Onboarding({ navigation }) {
 
+
   const [data, setData] = useState({
     name: '',
     email: '',
@@ -19,7 +20,7 @@ export default function Onboarding({ navigation }) {
     try {
       const jsonValue = JSON.stringify(data)
       await AsyncStorage.setItem('profileData', jsonValue)
-      navigation.navigate('Profile');
+      navigation.navigate('HomeScreen');
     } catch (e) {
       // saving error
     }
