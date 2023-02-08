@@ -1,149 +1,216 @@
-import { useEffect, useState, } from 'react';
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Image, TextInput, TouchableOpacity, FlatList, Alert } from 'react-native';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import {
+    Text,
+    View,
+    StyleSheet,
+    SectionList,
+    SafeAreaView,
+    StatusBar,
+    Alert,
+    Image,
+    Pressable
+} from 'react-native';
+import { Searchbar } from 'react-native-paper';
+import debounce from 'lodash.debounce';
+import {
+    createTable,
+    getMenuItems,
+    saveMenuItems,
+    filterByQueryAndCategories,
+} from '../database';
+import Filters from '../components/Filters';
+import { getSectionListData, useUpdateEffect } from '../utils/utils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Header } from '../components/header';
-import { responsiveFontSize, responsiveHeight, responsiveWidth } from '../scripts/constants';
-import * as SQLite from 'expo-sqlite';
-import { FontAwesome } from '@expo/vector-icons';
 
-const db = SQLite.openDatabase('example')
+const API_URL =
+    'https://raw.githubusercontent.com/Meta-Mobile-Developer-PC/Working-With-Data-API/main/capstone.json';
+const sections = ['starters', 'mains', 'desserts'];
 
-export default function HomeScreen({ navigation }) {
+const Item = ({ name, price, description, image }) => (
+    <View style={styles.item}>
+        <View style={styles.itemBody}>
+            <Text style={styles.name}>{name}</Text>
+            <Text style={styles.description}>{description}</Text>
+            <Text style={styles.price}>${price}</Text>
+        </View>
+        <Image style={styles.itemImage} source={{ uri: `https://github.com/Meta-Mobile-Developer-PC/Working-With-Data-API/blob/main/images/${image}?raw=true` }} />
+    </View>
+);
 
-    const [data, setData] = useState([])
-    const [salad, setSalad] = useState(null)
-    const menuTypes = [
-        { 'category': 'Starters' },
-        { 'category': 'Mains' },
-        { 'category': 'Desserts' },
-        { 'category': 'Drinks' },
-        { 'category': 'Specials' },
-    ]
-    const [textInput, setTextInput] = useState('')
+const Home = ({ navigation }) => {
+    const [profile, setProfile] = useState({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phoneNumber: "",
+        orderStatuses: false,
+        passwordChanges: false,
+        specialOffers: false,
+        newsletter: false,
+        image: "",
+    });
+    const [data, setData] = useState([]);
+    const [searchBarText, setSearchBarText] = useState('');
+    const [query, setQuery] = useState('');
+    const [filterSelections, setFilterSelections] = useState(
+        sections.map(() => false)
+    );
 
-    // useEffect(() => {
-    //     db.transaction((tx) => {
-    //         tx.executeSql(
-    //             'create table if not exists customers (id integer primary key not null, name text)'
-    //         )
-    //         tx.executeSql('insert into customers (name) values (?), (?)', [
-    //             'Mark',
-    //             'John',
-    //         ])
-    //         tx.executeSql('select * from customers', [], (_, { rows }) =>
-    //             Alert.alert(JSON.stringify(rows))
-    //         )
-    //     })
-    // }, [])
-
+    const fetchData = async () => {
+        try {
+            const response = await fetch(API_URL);
+            const json = await response.json();
+            const menu = json.menu.map((item, index) => ({
+                id: index + 1,
+                name: item.name,
+                price: item.price.toString(),
+                description: item.description,
+                image: item.image,
+                category: item.category
+            }));
+            return menu;
+        } catch (error) {
+            console.error(error);
+        } finally {
+        }
+    }
 
     useEffect(() => {
-        fetch('https://raw.githubusercontent.com/Meta-Mobile-Developer-PC/Working-With-Data-API/main/capstone.json')
-            .then((response) => response.json())
-            .then((data) => {
-                setData(data)
-                // console.log(data)
-            })
-    }, [])
+        (async () => {
+            let menuItems = []
+            try {
+                await createTable();
+                menuItems = await getMenuItems();
+                if (!menuItems.length) {
+                    menuItems = await fetchData();
+                    saveMenuItems(menuItems);
+                }
+                const sectionListData = getSectionListData(menuItems);
+                setData(sectionListData);
+                const getProfile = await AsyncStorage.getItem('profile');
+                setProfile(JSON.parse(getProfile))
+            } catch (e) {
+                Alert.alert(e.message);
+            }
+        })();
+    }, []);
 
-    // useEffect(() => {
-    //     fetch('https://github.com/Meta-Mobile-Developer-PC/Working-With-Data-API/blob/main/images/greekSalad.jpg?raw=true')
-    //         .then((response) => response.json())
-    //         .then((data) => {
-    //             setSalad(data)
-    //             console.log(data)
-    //         })
-    // }, [])
+    useUpdateEffect(() => {
+        (async () => {
+            const activeCategories = sections.filter((s, i) => {
+                if (filterSelections.every((item) => item === false)) {
+                    return true;
+                }
+                return filterSelections[i];
+            });
+            try {
+                const menuItems = await filterByQueryAndCategories(
+                    query,
+                    activeCategories
+                );
+                const sectionListData = getSectionListData(menuItems);
+                setData(sectionListData);
+            } catch (e) {
+                Alert.alert(e.message);
+            }
+        })();
+    }, [filterSelections, query]);
 
-    const Item = ({ name, description, price }) => (
-        <View style={styles.flatList}>
-            <Text style={styles.title}>{name}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+    const lookup = useCallback((q) => {
+        setQuery(q);
+    }, []);
 
-                <Text
-                    numberOfLines={2}
-                    style={styles.text}
-                >
-                    {description}
-                </Text>
-                <Image
-                    source={require('../assets/Greek_salad.png')}
-                    style={{
-                        resizeMode: 'cover',
-                        height: 80,
-                        width: 80,
-                    }}
-                />
-            </View>
-            <Text style={styles.price}>{'$'}{price}</Text>
-            <View style={styles.seperator} />
-        </View>
-    );
-    const ItemTypes = ({ category }) => (
-        <TouchableOpacity style={styles.button}>
-            <Text style={{ ...styles.title, fontSize: responsiveFontSize(18), }}>{category}</Text>
-        </TouchableOpacity>
-    );
+    const debouncedLookup = useMemo(() => debounce(lookup, 500), [lookup]);
+
+    const handleSearchChange = (text) => {
+        setSearchBarText(text);
+        debouncedLookup(text);
+    };
+
+    const handleFiltersChange = async (index) => {
+        const arrayCopy = [...filterSelections];
+        arrayCopy[index] = !filterSelections[index];
+        setFilterSelections(arrayCopy);
+    };
+
+    const getData = async () => {
+        try {
+            const jsonValue = await AsyncStorage.getItem('profileData')
+            setProfile(jsonValue != null ? JSON.parse(jsonValue) : null)
+            console.log(profile)
+        } catch (e) {
+            console.log(e)
+        }
+    }
+    useEffect(() => {
+        getData()
+    }, []);
 
     return (
-        <View style={styles.container}>
-            <Header navigation={navigation}></Header>
-            <View style={styles.hero}>
-                <Text style={styles.lemonTitle}>{'Little Lemon'}</Text>
-                <Text style={{ ...styles.title, color: 'white' }}>{'Chicago'}</Text>
-                <Text style={{ ...styles.text, color: 'white', width: responsiveWidth(56), fontSize: responsiveFontSize(20), marginTop: 8 }}>{'We are a family owned Mediterranean restaurant, focuses on trditional recipes served with a modern twist.'}</Text>
+        <SafeAreaView style={styles.container}>
+            <View style={styles.header}>
                 <Image
-                    source={require('../assets/rest.webp')}
-                    style={{
-                        width: 150,
-                        height: 150,
-                        resizeMode: 'cover',
-                        position: 'absolute',
-                        left: responsiveWidth(59),
-                        top: responsiveHeight(7),
-                        borderRadius: 20
-                    }}
+                    style={styles.logo}
+                    source={require("../assets/Logo.png")}
+                    accessible={true}
+                    accessibilityLabel={"Little Lemon Logo"}
                 />
-                <TextInput
-                    onChangeText={(val) => setTextInput(val)}
-                    style={styles.textInput}>
-                    <FontAwesome
-                        name="search"
-                        size={20}
-                        color="black"
-                        style={{ justifyContent: 'center', }} />
-                </TextInput>
-            </View>
-            <View style={styles.menu}>
-                <Text style={{ fontWeight: 'bold', fontSize: responsiveWidth(4.2), margin: responsiveWidth(2) }}>{'ORDER FOR DELIVERY!'}</Text>
-                <FlatList
-                    horizontal={true}
-
-                    data={menuTypes}
-                    renderItem={({ item }) =>
-                        <ItemTypes
-                            category={item.category}
-                        />
+                <Pressable style={styles.avatar} onPress={() => navigation.navigate('Profile')}>
+                    {
+                        profile?.image ? <Image source={{ uri: profile?.image }} style={styles.avatarImage} />
+                            :
+                            <View style={styles.avatarEmpty}>
+                                <Text style={styles.avatarEmptyText}>
+                                    {profile?.firstName && Array.from(profile?.firstName)[0]}{profile?.lastName && Array.from(profile?.lastName)[0]}
+                                </Text>
+                            </View>
                     }
-                    keyExtractor={item => item.id}
+                </Pressable>
+            </View>
+            <View style={styles.heroSection}>
+                <Text style={styles.heroHeader}>Little Lemon</Text>
+                <View style={styles.heroBody}>
+                    <View style={styles.heroContent}>
+                        <Text style={styles.heroHeader2}>Chicago</Text>
+                        <Text style={styles.heroText}>We are a family owned Mediterranean restaurant, focused on traditional recipes served with a
+                            modern twist.</Text>
+                    </View>
+                    <Image
+                        style={styles.heroImage}
+                        source={require("../assets/rest.webp")}
+                        accessible={true}
+                        accessibilityLabel={"Little Lemon Food"}
+                    />
+                </View>
+                <Searchbar
+                    placeholder="Search"
+                    placeholderTextColor="#333333"
+                    onChangeText={handleSearchChange}
+                    value={searchBarText}
+                    style={styles.searchBar}
+                    iconColor="#333333"
+                    inputStyle={{ color: '#333333' }}
+                    elevation={0}
                 />
             </View>
-            <View style={styles.bottom}>
-                <FlatList
-                    data={data.menu}
-                    renderItem={({ item }) =>
-                        <Item
-                            name={item.name}
-                            description={item.description}
-                            price={item.price}
-                        />}
-                    keyExtractor={item => item.id}
-                />
-            </View>
-        </View >
+            <Text style={styles.delivery}>ORDER FOR DELIVERY!</Text>
+            <Filters
+                selections={filterSelections}
+                onChange={handleFiltersChange}
+                sections={sections}
+            />
+            <SectionList
+                style={styles.sectionList}
+                sections={data}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                    <Item name={item.name} price={item.price} description={item.description} image={item.image} />
+                )}
+                renderSectionHeader={({ section: { name } }) => (
+                    <Text style={styles.itemHeader}>{name}</Text>
+                )}
+            />
+        </SafeAreaView>
     );
 }
 
@@ -152,71 +219,113 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#fff',
     },
-    hero: {
-        flex: 4 / 10,
-        backgroundColor: '#495E57'
+    header: {
+        padding: 12,
+        flexDirection: "row",
+        justifyContent: "center",
+        backgroundColor: "#dee3e9",
     },
-    menu: {
-        // backgroundColor: 'blue',
-        flex: 1.2 / 10,
-        borderBottomWidth: 0.5,
-        borderColor: 'silver'
+    logo: {
+        height: 50,
+        width: 150,
+        resizeMode: "contain",
     },
-    bottom: {
-        flex: 5 / 10
+    sectionList: {
+        paddingHorizontal: 16,
     },
-    title: {
-        fontWeight: 'bold',
-        fontSize: responsiveFontSize(23),
-        margin: 5,
-        marginLeft: 8,
+    searchBar: {
+        marginTop: 15,
+        backgroundColor: '#e4e4e4',
+        shadowRadius: 0,
+        shadowOpacity: 0,
     },
-    text: {
-        fontSize: responsiveFontSize(18),
-        marginLeft: 8,
-        width: responsiveWidth(70),
-
+    item: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderTopWidth: 1,
+        borderTopColor: '#cccccc',
+        paddingVertical: 10,
+    },
+    itemBody: {
+        flex: 1,
+    },
+    itemHeader: {
+        fontSize: 24,
+        paddingVertical: 8,
+        color: '#495e57',
+        backgroundColor: '#fff'
+    },
+    name: {
+        fontSize: 20,
+        color: '#000000',
+        paddingBottom: 5,
+    },
+    description: {
+        color: '#495e57',
+        paddingRight: 5,
     },
     price: {
-        marginLeft: 8,
-        marginTop: 8,
-        fontSize: responsiveFontSize(20),
+        fontSize: 20,
+        color: '#495e57',
+        paddingTop: 5,
     },
-    seperator: {
-        height: 0.3,
-        backgroundColor: 'silver',
-        marginHorizontal: responsiveWidth(3),
-        marginVertical: 8
+    itemImage: {
+        width: 100,
+        height: 100,
     },
-    button: {
-        backgroundColor: '#EDEFEE',
-        height: 40,
-        width: 90,
-        borderRadius: 15,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginHorizontal: 5,
-        // top: 9
-
+    avatar: {
+        flex: 1,
+        position: 'absolute',
+        right: 10,
+        top: 10,
     },
-    lemonTitle: {
-        fontSize: responsiveFontSize(39),
-        marginLeft: 8,
+    avatarImage: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+    },
+    avatarEmpty: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: '#0b9a6a',
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    heroSection: {
+        backgroundColor: '#495e57',
+        padding: 15,
+    },
+    heroHeader: {
+        color: '#f4ce14',
         fontWeight: 'bold',
-        marginTop: 8,
-        color: '#F4CE14',
-
+        fontSize: 36,
     },
-    textInput: {
-        width: responsiveWidth(90),
-        marginHorizontal: 10,
-        height: responsiveHeight(5),
-        backgroundColor: 'white',
-        borderRadius: 14,
-        marginTop: 15,
-        alignSelf: 'center',
-        justifyContent: 'center',
-        padding: 10
-
+    heroHeader2: {
+        color: '#fff',
+        fontSize: 24,
+    },
+    heroText: {
+        color: '#fff'
+    },
+    heroBody: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    heroContent: {
+        flex: 1,
+    },
+    heroImage: {
+        width: 100,
+        height: 100,
+        borderRadius: 12,
+    },
+    delivery: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        padding: 15,
     }
 });
+
+export default Home;

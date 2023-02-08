@@ -1,29 +1,24 @@
 import { useState, useEffect } from 'react';
-import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, Image, TextInput, TouchableOpacity, Button, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
-import { Ionicons } from '@expo/vector-icons';
 import { responsiveFontSize, responsiveHeight, responsiveWidth } from '../scripts/constants';
-import BouncyCheckbox from "react-native-bouncy-checkbox";
 import { MaskedTextInput } from "react-native-mask-text";
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import CheckBox from 'expo-checkbox';
 
 
 export default function Profile({ navigation }) {
 
-    const [storage, setStorage] = useState({})
-    const [image, setImage] = useState(null);
     const [data, setData] = useState({
         name: '',
         last_name: '',
         email: '',
         phone_number: '',
-        check_textInputChange: 'null',
-        check_email: 'null',
+
+        check_textInputChange: false,
+        check_email: false,
+
         order_status: false,
         password_changes: false,
         special_offers: false,
@@ -37,7 +32,7 @@ export default function Profile({ navigation }) {
             const jsonValue = JSON.stringify(data)
             await AsyncStorage.setItem('profileData', jsonValue)
         } catch (e) {
-            // saving error
+            console.log(e)
         }
     }
 
@@ -141,6 +136,11 @@ export default function Profile({ navigation }) {
     const clearStorage = async () => {
         AsyncStorage.clear()
         navigation?.navigate('Onboarding')
+        setData({
+            ...data,
+            // name: val,
+            check_textInputChange: false
+        });
     }
 
     return (
@@ -208,25 +208,25 @@ export default function Profile({ navigation }) {
                         </View>
                         <Text style={styles.textInputTitles}>{'First Name'}</Text>
                         <TextInput
-                            value={data.name}
+                            value={data?.name}
                             onChangeText={(val) => textInputChange(val)}
                             // placeholder="Type your Name"
                             style={styles.textInput} />
                         <Text style={styles.textInputTitles}>{'Last Name'}</Text>
                         <TextInput
-                            value={data.last_name}
+                            value={data?.last_name}
                             onChangeText={(val) => textLastNameInputChange(val)}
                             placeholder="Type your Last Name"
                             style={styles.textInput} />
                         <Text style={styles.textInputTitles}>{'Email'}</Text>
                         <TextInput
-                            value={data.email}
+                            value={data?.email}
                             onChangeText={(val) => handleEmailChange(val)}
                             placeholder="Type your Email"
                             style={styles.textInput} />
                         <Text style={styles.textInputTitles}>{'Phone Nuber'}</Text>
                         <MaskedTextInput
-                            value={data.phone_number}
+                            value={data?.phone_number}
                             mask="999-999-9999"
                             onChangeText={(val) => phoneInputChange(val)}
                             placeholder="Type your Phone"
@@ -236,7 +236,7 @@ export default function Profile({ navigation }) {
                         </Text>
                         <View style={styles.checkBoxes}>
                             <CheckBox
-                                value={data.order_status}
+                                value={data?.order_status}
                                 color={'#495E'}
                                 onValueChange={(newValue) => updateProfile('order_status', newValue)}
                                 style={styles.checkBoxEach}
@@ -245,7 +245,7 @@ export default function Profile({ navigation }) {
                         </View>
                         <View style={styles.checkBoxes}>
                             <CheckBox
-                                value={data.password_changes}
+                                value={data?.password_changes}
                                 color={'#495E'}
                                 onValueChange={(newValue) => updateProfile('password_changes', newValue)}
                                 style={styles.checkBoxEach}
@@ -254,7 +254,7 @@ export default function Profile({ navigation }) {
                         </View>
                         <View style={styles.checkBoxes}>
                             <CheckBox
-                                value={data.special_offers}
+                                value={data?.special_offers}
                                 color={'#495E'}
                                 onValueChange={(newValue) => updateProfile('special_offers', newValue)}
                                 style={styles.checkBoxEach}
@@ -263,7 +263,7 @@ export default function Profile({ navigation }) {
                         </View>
                         <View style={styles.checkBoxes}>
                             <CheckBox
-                                value={data.newsletters}
+                                value={data?.newsletters}
                                 color={'#495E'}
                                 onValueChange={(newValue) => updateProfile('newsletters', newValue)}
                                 style={styles.checkBoxEach}
@@ -278,7 +278,7 @@ export default function Profile({ navigation }) {
                         </TouchableOpacity>
                         <View style={{ flexDirection: 'row' }}>
                             <TouchableOpacity
-                                onPress={() => { }}
+                                onPress={() => setDiscard(true)}
                                 style={{ ...styles.button, borderColor: '#F4CE14', width: responsiveWidth(40), backgroundColor: 'white', borderWidth: 1 }}
                             >
                                 <Text style={styles.text}>{'Discrad Changes'}</Text>
